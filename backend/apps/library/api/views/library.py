@@ -1,7 +1,9 @@
 from django.conf import settings
 from django.http import HttpResponseRedirect
 from django.core import signing
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
+from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -10,6 +12,7 @@ from apps.library.api.serializers.library import (
     DownloadAuthorizationSerializer,
     PurchaseAccessSerializer,
 )
+from apps.library.models import PurchaseAccess
 from apps.library.selectors.access import (
     get_user_purchase_access_for_product,
     get_user_purchase_accesses,
@@ -21,26 +24,49 @@ from apps.library.services import (
     get_current_downloadable_file,
     parse_signed_download_token,
 )
+from apps.common.api.pagination import DefaultPageNumberPagination
+from apps.common.api.serializers import DetailSerializer, ServiceHealthSerializer
 
 
 class LibraryHealthView(APIView):
     permission_classes = [AllowAny]
 
+    @extend_schema(operation_id="library_health", responses=ServiceHealthSerializer)
     def get(self, request):
         return Response({"service": "library", "status": "ok"})
 
 
-class LibraryListView(APIView):
+class LibraryListView(GenericAPIView):
     permission_classes = [IsAuthenticated]
+    serializer_class = PurchaseAccessSerializer
+    queryset = PurchaseAccess.objects.none()
+    pagination_class = DefaultPageNumberPagination
 
+    @extend_schema(
+        operation_id="library_list",
+        responses={200: PurchaseAccessSerializer(many=True)},
+    )
     def get(self, request):
         accesses = get_user_purchase_accesses(user=request.user)
+        page = self.paginate_queryset(accesses)
+        if page is not None:
+            return self.get_paginated_response(
+                PurchaseAccessSerializer(page, many=True).data
+            )
         return Response(PurchaseAccessSerializer(accesses, many=True).data)
 
 
 class LibraryDownloadAuthorizationView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        operation_id="library_download_authorization",
+        responses={
+            200: DownloadAuthorizationSerializer,
+            404: DetailSerializer,
+            422: DetailSerializer,
+        },
+    )
     def get(self, request, product_id):
         purchase_access = get_user_purchase_access_for_product(
             user=request.user,
@@ -81,6 +107,16 @@ class LibraryDownloadAuthorizationView(APIView):
 class LibrarySecureDownloadView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        operation_id="library_secure_download",
+        responses={
+            302: OpenApiResponse(description="Redirect to private storage URL."),
+            403: DetailSerializer,
+            404: DetailSerializer,
+            422: DetailSerializer,
+            503: DetailSerializer,
+        },
+    )
     def get(self, request, token):
         try:
             payload = parse_signed_download_token(token=token)

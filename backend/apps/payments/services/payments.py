@@ -1,10 +1,12 @@
 from decimal import Decimal
 
+from apps.audit.services import write_audit_log
 from django.db import transaction
 from django.utils import timezone
 
 from apps.common.choices import OrderStatus, PaymentStatus
 from apps.library.models import PurchaseAccess
+from apps.notifications.services import create_notification
 
 
 def _ensure_payment_can_transition(payment, *, allowed_statuses: set[str]) -> None:
@@ -69,6 +71,22 @@ def mark_payment_partially_refunded(*, payment, refunded_amount):
     order = payment.order
     order.status = OrderStatus.PARTIALLY_REFUNDED
     order.save(update_fields=["status", "updated_at"])
+    create_notification(
+        user=order.buyer,
+        notification_type="payment.partially_refunded",
+        title="Partial refund issued",
+        body=(
+            f"A partial refund of {payment.refunded_amount} {payment.currency} "
+            f"was issued for order {order.order_number}."
+        ),
+    )
+    write_audit_log(
+        actor_user=order.buyer,
+        action_type="payment.partially_refunded",
+        entity_type="payment",
+        entity_id=payment.id,
+        metadata={"refunded_amount": str(payment.refunded_amount)},
+    )
 
     payment.refresh_from_db()
     return payment
@@ -98,6 +116,19 @@ def mark_payment_refunded(*, payment, refunded_amount=None):
     order.save(update_fields=["status", "updated_at"])
 
     _revoke_purchase_accesses(payment=payment)
+    create_notification(
+        user=order.buyer,
+        notification_type="payment.refunded",
+        title="Refund issued",
+        body=f"Your order {order.order_number} was fully refunded.",
+    )
+    write_audit_log(
+        actor_user=order.buyer,
+        action_type="payment.refunded",
+        entity_type="payment",
+        entity_id=payment.id,
+        metadata={"refunded_amount": str(payment.refunded_amount)},
+    )
 
     payment.refresh_from_db()
     return payment
@@ -134,6 +165,19 @@ def mark_payment_succeeded(*, payment, provider_payment_id: str = ""):
 
     order.status = OrderStatus.FULFILLED
     order.save(update_fields=["status", "updated_at"])
+    create_notification(
+        user=order.buyer,
+        notification_type="payment.succeeded",
+        title="Payment succeeded",
+        body=f"Your payment for order {order.order_number} was confirmed.",
+    )
+    write_audit_log(
+        actor_user=order.buyer,
+        action_type="payment.succeeded",
+        entity_type="payment",
+        entity_id=payment.id,
+        metadata={"order_number": order.order_number},
+    )
 
     payment.refresh_from_db()
     return payment
@@ -154,6 +198,19 @@ def mark_payment_failed(*, payment):
     order = payment.order
     order.status = OrderStatus.FAILED
     order.save(update_fields=["status", "updated_at"])
+    create_notification(
+        user=order.buyer,
+        notification_type="payment.failed",
+        title="Payment failed",
+        body=f"Your payment for order {order.order_number} failed.",
+    )
+    write_audit_log(
+        actor_user=order.buyer,
+        action_type="payment.failed",
+        entity_type="payment",
+        entity_id=payment.id,
+        metadata={"order_number": order.order_number},
+    )
 
     payment.refresh_from_db()
     return payment

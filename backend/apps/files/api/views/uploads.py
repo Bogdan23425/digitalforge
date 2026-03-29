@@ -1,3 +1,4 @@
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -12,6 +13,7 @@ from apps.files.api.serializers.uploads import (
 )
 from apps.files.models import ProductFile, ProductImage
 from apps.files.services import add_product_file, add_product_image
+from apps.common.api.serializers import DetailSerializer
 
 
 class SellerProductImageListCreateView(APIView):
@@ -22,11 +24,20 @@ class SellerProductImageListCreateView(APIView):
         self.check_object_permissions(request, product)
         return product
 
+    @extend_schema(
+        operation_id="seller_product_images_list",
+        responses={200: ProductImageSerializer(many=True)},
+    )
     def get(self, request, pk):
         product = self.get_product(request, pk)
         images = product.images.order_by("sort_order", "created_at")
         return Response(ProductImageSerializer(images, many=True).data)
 
+    @extend_schema(
+        operation_id="seller_product_images_create",
+        request=ProductImageCreateSerializer,
+        responses={201: ProductImageSerializer},
+    )
     def post(self, request, pk):
         product = self.get_product(request, pk)
         serializer = ProductImageCreateSerializer(data=request.data)
@@ -41,6 +52,14 @@ class SellerProductImageListCreateView(APIView):
 class SellerProductImageDeleteView(APIView):
     permission_classes = [IsSellerOrAdmin, IsProductOwnerOrAdmin]
 
+    @extend_schema(
+        operation_id="seller_product_images_delete",
+        request=None,
+        responses={
+            204: OpenApiResponse(description="Image deleted."),
+            404: DetailSerializer,
+        },
+    )
     def delete(self, request, pk, image_id):
         product = Product.objects.get(pk=pk, is_deleted=False)
         self.check_object_permissions(request, product)
@@ -56,11 +75,20 @@ class SellerProductFileListCreateView(APIView):
         self.check_object_permissions(request, product)
         return product
 
+    @extend_schema(
+        operation_id="seller_product_files_list",
+        responses={200: ProductFileSerializer(many=True)},
+    )
     def get(self, request, pk):
         product = self.get_product(request, pk)
         files = product.files.order_by("-is_current", "-created_at")
         return Response(ProductFileSerializer(files, many=True).data)
 
+    @extend_schema(
+        operation_id="seller_product_files_create",
+        request=ProductFileCreateSerializer,
+        responses={201: ProductFileSerializer},
+    )
     def post(self, request, pk):
         product = self.get_product(request, pk)
         serializer = ProductFileCreateSerializer(data=request.data)
@@ -75,6 +103,14 @@ class SellerProductFileListCreateView(APIView):
 class SellerProductFileDeleteView(APIView):
     permission_classes = [IsSellerOrAdmin, IsProductOwnerOrAdmin]
 
+    @extend_schema(
+        operation_id="seller_product_files_delete",
+        request=None,
+        responses={
+            204: OpenApiResponse(description="File deleted."),
+            404: DetailSerializer,
+        },
+    )
     def delete(self, request, pk, file_id):
         product = Product.objects.get(pk=pk, is_deleted=False)
         self.check_object_permissions(request, product)

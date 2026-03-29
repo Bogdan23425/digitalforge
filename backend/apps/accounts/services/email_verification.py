@@ -44,38 +44,46 @@ def create_email_verification(user: User) -> EmailVerification:
     return verification
 
 
-@transaction.atomic
 def verify_email_code(user: User, code: str) -> User:
-    verification = user.email_verifications.filter(
-        status=EmailVerificationStatus.PENDING
-    ).first()
-    now = timezone.now()
+    error_message = None
 
-    if verification is None:
-        raise ValueError("No active verification flow.")
-    if verification.expires_at <= now:
-        verification.status = EmailVerificationStatus.EXPIRED
-        verification.save(update_fields=["status"])
-        raise ValueError("Verification code has expired.")
-    if verification.attempts_count >= VERIFICATION_MAX_ATTEMPTS:
-        verification.status = EmailVerificationStatus.FAILED
-        verification.save(update_fields=["status"])
-        raise ValueError("Verification attempts limit exceeded.")
-    if not check_password(code, verification.code_hash):
-        verification.attempts_count += 1
-        if verification.attempts_count >= VERIFICATION_MAX_ATTEMPTS:
+    with transaction.atomic():
+        verification = (
+            user.email_verifications.select_for_update()
+            .filter(status=EmailVerificationStatus.PENDING)
+            .first()
+        )
+        now = timezone.now()
+
+        if verification is None:
+            error_message = "No active verification flow."
+        elif verification.expires_at <= now:
+            verification.status = EmailVerificationStatus.EXPIRED
+            verification.save(update_fields=["status"])
+            error_message = "Verification code has expired."
+        elif verification.attempts_count >= VERIFICATION_MAX_ATTEMPTS:
             verification.status = EmailVerificationStatus.FAILED
-        verification.save(update_fields=["attempts_count", "status"])
-        raise ValueError("Invalid verification code.")
+            verification.save(update_fields=["status"])
+            error_message = "Verification attempts limit exceeded."
+        elif not check_password(code, verification.code_hash):
+            verification.attempts_count += 1
+            if verification.attempts_count >= VERIFICATION_MAX_ATTEMPTS:
+                verification.status = EmailVerificationStatus.FAILED
+            verification.save(update_fields=["attempts_count", "status"])
+            error_message = "Invalid verification code."
+        else:
+            verification.status = EmailVerificationStatus.VERIFIED
+            verification.used_at = now
+            verification.save(update_fields=["status", "used_at"])
+            user.email_verified = True
+            user.save(update_fields=["email_verified"])
+            user.email_verifications.exclude(id=verification.id).filter(
+                status=EmailVerificationStatus.PENDING
+            ).update(status=EmailVerificationStatus.CANCELED)
 
-    verification.status = EmailVerificationStatus.VERIFIED
-    verification.used_at = now
-    verification.save(update_fields=["status", "used_at"])
-    user.email_verified = True
-    user.save(update_fields=["email_verified"])
-    user.email_verifications.exclude(id=verification.id).filter(
-        status=EmailVerificationStatus.PENDING
-    ).update(status=EmailVerificationStatus.CANCELED)
+    if error_message is not None:
+        raise ValueError(error_message)
+
     return user
 
 

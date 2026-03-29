@@ -1,15 +1,23 @@
 from django.urls import path
-from rest_framework.response import Response
-from rest_framework.views import APIView
-
-
-class ComplaintsHealthView(APIView):
-    permission_classes = []
-
-    def get(self, request):
-        return Response({"service": "complaints", "status": "ok"})
+from apps.complaints.api.views.complaints import (
+    ComplaintListCreateView,
+    ComplaintStatusUpdateView,
+    ComplaintsHealthView,
+    ModerationComplaintListView,
+)
 
 
 urlpatterns = [
     path("health/", ComplaintsHealthView.as_view(), name="complaints-health"),
+    path("", ComplaintListCreateView.as_view(), name="complaints-list-create"),
+    path(
+        "moderation/",
+        ModerationComplaintListView.as_view(),
+        name="complaints-moderation-list",
+    ),
+    path(
+        "<uuid:pk>/status/",
+        ComplaintStatusUpdateView.as_view(),
+        name="complaints-status-update",
+    ),
 ]

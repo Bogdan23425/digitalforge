@@ -178,8 +178,8 @@ class CheckoutWebhookLibraryFlowTests(APITestCase):
 
         library_response = self.client.get("/api/v1/library/")
         self.assertEqual(library_response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(library_response.data), 1)
-        self.assertTrue(library_response.data[0]["has_downloadable_file"])
+        self.assertEqual(library_response.data["count"], 1)
+        self.assertTrue(library_response.data["results"][0]["has_downloadable_file"])
 
         download_response = self.client.get(
             f"/api/v1/library/{product_id}/download/",
@@ -215,7 +215,7 @@ class CheckoutWebhookLibraryFlowTests(APITestCase):
         self.assertEqual(
             library_after_partial_refund_response.status_code, status.HTTP_200_OK
         )
-        self.assertEqual(len(library_after_partial_refund_response.data), 1)
+        self.assertEqual(library_after_partial_refund_response.data["count"], 1)
 
         full_refund_webhook_response = self.client.post(
             "/api/v1/payments/webhooks/",
@@ -239,7 +239,7 @@ class CheckoutWebhookLibraryFlowTests(APITestCase):
 
         library_after_refund_response = self.client.get("/api/v1/library/")
         self.assertEqual(library_after_refund_response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(library_after_refund_response.data), 0)
+        self.assertEqual(library_after_refund_response.data["count"], 0)
 
         download_after_refund_response = self.client.get(
             f"/api/v1/library/{product_id}/download/",

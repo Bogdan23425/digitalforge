@@ -1,9 +1,11 @@
 from django.db import transaction
 from django.utils import timezone
 
+from apps.audit.services import write_audit_log
 from apps.catalog.models import Product
 from apps.common.choices import ProductStatus
 from apps.moderation.models import ModerationAction
+from apps.notifications.services import create_notification
 
 
 def _record_action(
@@ -44,6 +46,19 @@ def approve_product(*, product: Product, actor_user, reason: str = "") -> Produc
         to_status=product.status,
         reason=reason,
     )
+    create_notification(
+        user=product.seller,
+        notification_type="product.approved",
+        title="Product approved",
+        body=f'Your product "{product.title}" was approved and published.',
+    )
+    write_audit_log(
+        actor_user=actor_user,
+        action_type="moderation.product_approved",
+        entity_type="product",
+        entity_id=product.id,
+        metadata={"reason": reason},
+    )
     return product
 
 
@@ -64,6 +79,19 @@ def request_changes(*, product: Product, actor_user, reason: str) -> Product:
         from_status=from_status,
         to_status=product.status,
         reason=reason,
+    )
+    create_notification(
+        user=product.seller,
+        notification_type="product.changes_requested",
+        title="Product needs changes",
+        body=f'Changes were requested for "{product.title}". Reason: {reason}',
+    )
+    write_audit_log(
+        actor_user=actor_user,
+        action_type="moderation.product_changes_requested",
+        entity_type="product",
+        entity_id=product.id,
+        metadata={"reason": reason},
     )
     return product
 
@@ -88,5 +116,18 @@ def reject_product(*, product: Product, actor_user, reason: str) -> Product:
         from_status=from_status,
         to_status=product.status,
         reason=reason,
+    )
+    create_notification(
+        user=product.seller,
+        notification_type="product.rejected",
+        title="Product rejected",
+        body=f'Your product "{product.title}" was rejected. Reason: {reason}',
+    )
+    write_audit_log(
+        actor_user=actor_user,
+        action_type="moderation.product_rejected",
+        entity_type="product",
+        entity_id=product.id,
+        metadata={"reason": reason},
     )
     return product

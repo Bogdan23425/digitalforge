@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.catalog.models import Category, Product
@@ -41,7 +42,8 @@ class PublicProductListSerializer(serializers.ModelSerializer):
             "published_at",
         ]
 
-    def get_cover_image_url(self, obj):
+    @extend_schema_field(serializers.URLField(allow_blank=True))
+    def get_cover_image_url(self, obj) -> str:
         cover_image = (
             obj.images.filter(kind="cover").order_by("sort_order", "created_at").first()
         )
@@ -59,7 +61,8 @@ class PublicProductDetailSerializer(PublicProductListSerializer):
             "updated_at",
         ]
 
-    def get_images(self, obj):
+    @extend_schema_field(PublicProductImageSerializer(many=True))
+    def get_images(self, obj) -> list[dict]:
         images = obj.images.order_by("sort_order", "created_at")
         return PublicProductImageSerializer(images, many=True).data
 

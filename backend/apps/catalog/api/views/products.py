@@ -1,4 +1,5 @@
 from django.db.models import Q
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import permissions, status
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.response import Response
@@ -21,12 +22,14 @@ from apps.catalog.services.products import (
     submit_product_for_review,
     update_product,
 )
+from apps.common.api.serializers import DetailSerializer, ServiceHealthSerializer
 from apps.common.api.pagination import DefaultPageNumberPagination
 
 
 class CatalogHealthView(APIView):
     permission_classes = [permissions.AllowAny]
 
+    @extend_schema(operation_id="catalog_health", responses=ServiceHealthSerializer)
     def get(self, request):
         return Response({"service": "catalog", "status": "ok"})
 
@@ -44,6 +47,13 @@ class PublicProductListView(ListAPIView):
     serializer_class = PublicProductListSerializer
     pagination_class = DefaultPageNumberPagination
 
+    @extend_schema(
+        operation_id="products_public_list",
+        parameters=[
+            OpenApiParameter(name="category", type=str, required=False),
+            OpenApiParameter(name="q", type=str, required=False),
+        ],
+    )
     def get_queryset(self):
         queryset = get_public_products()
         category_slug = self.request.query_params.get("category")
@@ -71,11 +81,25 @@ class PublicProductDetailView(RetrieveAPIView):
 
 class SellerProductListCreateView(APIView):
     permission_classes = [IsSellerOrAdmin]
+    pagination_class = DefaultPageNumberPagination
 
+    @extend_schema(
+        operation_id="seller_products_list",
+        responses={200: SellerProductListSerializer(many=True)},
+    )
     def get(self, request):
         products = get_seller_products(seller_id=request.user.id)
-        return Response(SellerProductListSerializer(products, many=True).data)
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(products, request, view=self)
+        return paginator.get_paginated_response(
+            SellerProductListSerializer(page, many=True).data
+        )
 
+    @extend_schema(
+        operation_id="seller_products_create",
+        request=SellerProductCreateSerializer,
+        responses={201: SellerProductDetailSerializer},
+    )
     def post(self, request):
         serializer = SellerProductCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -96,10 +120,19 @@ class SellerProductDetailView(APIView):
         self.check_object_permissions(request, product)
         return product
 
+    @extend_schema(
+        operation_id="seller_products_detail",
+        responses={200: SellerProductDetailSerializer},
+    )
     def get(self, request, pk):
         product = self.get_object(request, pk)
         return Response(SellerProductDetailSerializer(product).data)
 
+    @extend_schema(
+        operation_id="seller_products_update",
+        request=SellerProductUpdateSerializer,
+        responses={200: SellerProductDetailSerializer},
+    )
     def patch(self, request, pk):
         product = self.get_object(request, pk)
         serializer = SellerProductUpdateSerializer(data=request.data, partial=True)
@@ -111,6 +144,11 @@ class SellerProductDetailView(APIView):
 class SellerProductSubmitView(APIView):
     permission_classes = [IsSellerOrAdmin, IsProductOwnerOrAdmin]
 
+    @extend_schema(
+        operation_id="seller_products_submit",
+        request=None,
+        responses={200: SellerProductDetailSerializer, 422: DetailSerializer},
+    )
     def post(self, request, pk):
         product = Product.objects.get(pk=pk, is_deleted=False)
         self.check_object_permissions(request, product)

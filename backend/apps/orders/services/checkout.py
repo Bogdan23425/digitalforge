@@ -4,6 +4,7 @@ from uuid import uuid4
 from django.db import transaction
 from django.utils import timezone
 
+from apps.audit.services import write_audit_log
 from apps.common.choices import OrderStatus, PaymentStatus
 from apps.common.choices import ProductStatus
 from apps.library.models import PurchaseAccess
@@ -81,6 +82,17 @@ def create_checkout_order(*, user, payment_provider: str = "stripe") -> Order:
         status=PaymentStatus.INITIATED,
         amount=order.total_amount,
         currency=order.currency,
+    )
+    write_audit_log(
+        actor_user=user,
+        action_type="order.checkout_created",
+        entity_type="order",
+        entity_id=order.id,
+        metadata={
+            "order_number": order.order_number,
+            "items_count": len(cart_items),
+            "payment_provider": payment_provider,
+        },
     )
 
     cart.items.all().delete()

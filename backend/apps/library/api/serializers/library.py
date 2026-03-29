@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.common.choices import FileScanStatus
@@ -26,7 +27,8 @@ class PurchaseAccessSerializer(serializers.ModelSerializer):
             "created_at",
         ]
 
-    def get_has_downloadable_file(self, obj):
+    @extend_schema_field(serializers.BooleanField())
+    def get_has_downloadable_file(self, obj) -> bool:
         current_file = (
             obj.product.files.filter(is_current=True).order_by("-created_at").first()
         )

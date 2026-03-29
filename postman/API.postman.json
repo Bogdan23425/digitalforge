@@ -1,0 +1,454 @@
+{
+  "info": {
+    "_postman_id": "871d9e45-3c13-49fd-a099-a7dd6f0cd7f5",
+    "name": "DigitalForge API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Compact local Postman collection for DigitalForge backend."
+  },
+  "item": [
+    {
+      "name": "Web",
+      "item": [
+        {
+          "name": "Admin",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/admin/"
+          }
+        },
+        {
+          "name": "Swagger",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/docs/swagger/"
+          }
+        },
+        {
+          "name": "Redoc",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/docs/redoc/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Get CSRF",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const csrf = pm.cookies.get('csrftoken');",
+                  "if (csrf) pm.environment.set('csrftoken', csrf);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/auth/csrf/"
+          }
+        },
+        {
+          "name": "Login Seller",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRFToken", "value": "{{csrftoken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{seller_email}}\",\n  \"password\": \"{{seller_password}}\"\n}"
+            },
+            "url": "{{base_url}}/api/v1/auth/login/"
+          }
+        },
+        {
+          "name": "Login Moderator",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRFToken", "value": "{{csrftoken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{moderator_email}}\",\n  \"password\": \"{{moderator_password}}\"\n}"
+            },
+            "url": "{{base_url}}/api/v1/auth/login/"
+          }
+        },
+        {
+          "name": "Login Buyer",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRFToken", "value": "{{csrftoken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{buyer_email}}\",\n  \"password\": \"{{buyer_password}}\"\n}"
+            },
+            "url": "{{base_url}}/api/v1/auth/login/"
+          }
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/auth/me/"
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-CSRFToken", "value": "{{csrftoken}}" }
+            ],
+            "url": "{{base_url}}/api/v1/auth/logout/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Catalog",
+      "item": [
+        {
+          "name": "List Categories",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (Array.isArray(data) && data.length > 0) {",
+                  "  if (data[0].id) pm.environment.set('category_id', data[0].id);",
+                  "  if (data[0].slug) pm.environment.set('category_slug', data[0].slug);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/products/categories/"
+          }
+        },
+        {
+          "name": "List Products",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "const items = Array.isArray(data) ? data : (data.results || []);",
+                  "if (items.length > 0) {",
+                  "  if (items[0].id) pm.environment.set('product_id', items[0].id);",
+                  "  if (items[0].slug) pm.environment.set('product_slug', items[0].slug);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/products/"
+          }
+        },
+        {
+          "name": "Product Detail",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/products/{{product_slug}}/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Seller",
+      "item": [
+        {
+          "name": "Create Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.id) pm.environment.set('product_id', data.id);",
+                  "if (data.slug) pm.environment.set('product_slug', data.slug);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRFToken", "value": "{{csrftoken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category_id\": \"{{category_id}}\",\n  \"title\": \"Postman Product\",\n  \"slug\": \"postman-product\",\n  \"short_description\": \"Short description\",\n  \"full_description\": \"Full description from Postman.\",\n  \"product_type\": \"template\",\n  \"base_price\": \"29.99\",\n  \"currency\": \"USD\"\n}"
+            },
+            "url": "{{base_url}}/api/v1/seller/products/"
+          }
+        },
+        {
+          "name": "Add Image",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRFToken", "value": "{{csrftoken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"image_url\": \"https://example.com/postman-cover.jpg\",\n  \"alt_text\": \"Postman cover\",\n  \"sort_order\": 0,\n  \"is_cover\": true\n}"
+            },
+            "url": "{{base_url}}/api/v1/seller/products/{{product_id}}/images/"
+          }
+        },
+        {
+          "name": "Add File",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRFToken", "value": "{{csrftoken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"file_name\": \"postman-product.zip\",\n  \"storage_key\": \"products/postman-product.zip\",\n  \"mime_type\": \"application/zip\",\n  \"file_size\": 2048,\n  \"checksum\": \"checksum-postman-001\"\n}"
+            },
+            "url": "{{base_url}}/api/v1/seller/products/{{product_id}}/files/"
+          }
+        },
+        {
+          "name": "Submit For Review",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-CSRFToken", "value": "{{csrftoken}}" }
+            ],
+            "url": "{{base_url}}/api/v1/seller/products/{{product_id}}/submit/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Moderation",
+      "item": [
+        {
+          "name": "Queue",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/moderation/products/"
+          }
+        },
+        {
+          "name": "Approve Product",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-CSRFToken", "value": "{{csrftoken}}" }
+            ],
+            "url": "{{base_url}}/api/v1/moderation/products/{{product_id}}/approve/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Orders And Payments",
+      "item": [
+        {
+          "name": "Add To Cart",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRFToken", "value": "{{csrftoken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_id\": \"{{product_id}}\"\n}"
+            },
+            "url": "{{base_url}}/api/v1/cart/items/"
+          }
+        },
+        {
+          "name": "Checkout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.id) pm.environment.set('order_id', data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRFToken", "value": "{{csrftoken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"payment_provider\": \"stripe\"\n}"
+            },
+            "url": "{{base_url}}/api/v1/checkout/"
+          }
+        },
+        {
+          "name": "List Payments",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "const items = data.results || [];",
+                  "if (items.length > 0 && items[0].id) pm.environment.set('payment_id', items[0].id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/payments/"
+          }
+        },
+        {
+          "name": "Simulate Success",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRFToken", "value": "{{csrftoken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"provider_payment_id\": \"pi_postman_success\"\n}"
+            },
+            "url": "{{base_url}}/api/v1/payments/{{payment_id}}/simulate-success/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Library",
+      "item": [
+        {
+          "name": "List Library",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/library/"
+          }
+        },
+        {
+          "name": "Get Download Authorization",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.download_url) {",
+                  "  const token = data.download_url.split('/').filter(Boolean).pop();",
+                  "  pm.environment.set('download_token', token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/library/{{product_id}}/download/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Complaints And Notifications",
+      "item": [
+        {
+          "name": "Create Complaint",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.id) pm.environment.set('complaint_id', data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRFToken", "value": "{{csrftoken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_id\": \"{{product_id}}\",\n  \"reason\": \"copyright\",\n  \"details\": \"Postman complaint test\"\n}"
+            },
+            "url": "{{base_url}}/api/v1/complaints/"
+          }
+        },
+        {
+          "name": "List Notifications",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "const items = data.results || [];",
+                  "if (items.length > 0 && items[0].id) pm.environment.set('notification_id', items[0].id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/notifications/"
+          }
+        },
+        {
+          "name": "Read Notification",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-CSRFToken", "value": "{{csrftoken}}" }
+            ],
+            "url": "{{base_url}}/api/v1/notifications/{{notification_id}}/read/"
+          }
+        }
+      ]
+    }
+  ],
+  "_postman_exported_at": "2026-03-29T21:35:00.000Z",
+  "_postman_exported_using": "OpenAI Codex"
+}

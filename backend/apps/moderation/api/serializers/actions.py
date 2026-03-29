@@ -1,6 +1,19 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.catalog.models import Product
+
+
+class ModerationSellerSerializer(serializers.Serializer):
+    id = serializers.UUIDField(read_only=True)
+    email = serializers.EmailField(read_only=True)
+    username = serializers.CharField(read_only=True)
+
+
+class ModerationCategorySerializer(serializers.Serializer):
+    id = serializers.UUIDField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    slug = serializers.CharField(read_only=True)
 
 
 class ModerationQueueItemSerializer(serializers.ModelSerializer):
@@ -24,14 +37,16 @@ class ModerationQueueItemSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
-    def get_seller(self, obj):
+    @extend_schema_field(ModerationSellerSerializer)
+    def get_seller(self, obj) -> dict:
         return {
             "id": str(obj.seller_id),
             "email": obj.seller.email,
             "username": obj.seller.username,
         }
 
-    def get_category(self, obj):
+    @extend_schema_field(ModerationCategorySerializer)
+    def get_category(self, obj) -> dict:
         return {
             "id": str(obj.category_id),
             "name": obj.category.name,
