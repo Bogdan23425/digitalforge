@@ -1,4 +1,6 @@
 from django.contrib.auth import login, logout
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -22,6 +24,14 @@ class HealthView(APIView):
 
     def get(self, request):
         return Response({"service": "accounts", "status": "ok"})
+
+
+@method_decorator(ensure_csrf_cookie, name="dispatch")
+class CsrfView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        return Response({"detail": "CSRF cookie set."})
 
 
 class RegisterView(APIView):

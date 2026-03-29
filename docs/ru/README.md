@@ -9,3 +9,4 @@
 5. [Сценарии и состояния](./05-workflows.md)
 6. [API](./06-api.md)
 7. [Права доступа](./07-permissions.md)
+8. [Deployment](./08-deployment.md)

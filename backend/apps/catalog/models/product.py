@@ -20,6 +20,7 @@ class Product(UUIDPrimaryKeyModel, TimestampedModel, SoftDeleteModel):
     slug = models.SlugField(unique=True, max_length=220)
     short_description = models.CharField(max_length=500)
     full_description = models.TextField()
+    product_type = models.CharField(max_length=50, default="other")
     base_price = models.DecimalField(max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=3, default="USD")
     status = models.CharField(
@@ -27,3 +28,7 @@ class Product(UUIDPrimaryKeyModel, TimestampedModel, SoftDeleteModel):
         choices=ProductStatus.choices,
         default=ProductStatus.DRAFT,
     )
+    moderation_note = models.TextField(blank=True)
+    published_at = models.DateTimeField(null=True, blank=True)
+    hidden_at = models.DateTimeField(null=True, blank=True)
+    archived_at = models.DateTimeField(null=True, blank=True)

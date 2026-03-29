@@ -1,4 +1,5 @@
 from .auth import (
+    CsrfView,
     HealthView,
     LoginView,
     LogoutView,
@@ -10,6 +11,7 @@ from .auth import (
 from .profile import ProfileMeView
 
 __all__ = [
+    "CsrfView",
     "HealthView",
     "LoginView",
     "LogoutView",

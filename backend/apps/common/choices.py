@@ -31,3 +31,10 @@ class PaymentStatus(models.TextChoices):
     REFUNDED = "refunded", "Refunded"
     PARTIALLY_REFUNDED = "partially_refunded", "Partially refunded"
     DISPUTED = "disputed", "Disputed"
+
+
+class FileScanStatus(models.TextChoices):
+    PENDING = "pending", "Pending"
+    CLEAN = "clean", "Clean"
+    INFECTED = "infected", "Infected"
+    FAILED = "failed", "Failed"

@@ -9,3 +9,4 @@
 5. [Workflows and States](./05-workflows.md)
 6. [API](./06-api.md)
 7. [Permissions](./07-permissions.md)
+8. [Deployment](./08-deployment.md)

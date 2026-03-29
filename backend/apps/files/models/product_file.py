@@ -1,5 +1,6 @@
 from django.db import models
 
+from apps.common.choices import FileScanStatus
 from apps.common.db.models import TimestampedModel, UUIDPrimaryKeyModel
 
 
@@ -15,3 +16,8 @@ class ProductFile(UUIDPrimaryKeyModel, TimestampedModel):
     file_size = models.BigIntegerField()
     checksum = models.CharField(max_length=128, blank=True)
     is_current = models.BooleanField(default=True)
+    scan_status = models.CharField(
+        max_length=16,
+        choices=FileScanStatus.choices,
+        default=FileScanStatus.PENDING,
+    )

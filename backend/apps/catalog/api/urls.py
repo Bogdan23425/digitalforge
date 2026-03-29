@@ -1,15 +1,17 @@
 from django.urls import path
-from rest_framework.response import Response
-from rest_framework.views import APIView
 
-
-class CatalogHealthView(APIView):
-    permission_classes = []
-
-    def get(self, request):
-        return Response({"service": "catalog", "status": "ok"})
-
+from apps.catalog.api.views.products import (
+    CatalogHealthView,
+    CategoryListView,
+    PublicProductDetailView,
+    PublicProductListView,
+)
 
 urlpatterns = [
     path("health/", CatalogHealthView.as_view(), name="catalog-health"),
+    path("categories/", CategoryListView.as_view(), name="category-list"),
+    path("", PublicProductListView.as_view(), name="public-product-list"),
+    path(
+        "<slug:slug>/", PublicProductDetailView.as_view(), name="public-product-detail"
+    ),
 ]

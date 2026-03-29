@@ -1,15 +1,23 @@
 from django.urls import path
-from rest_framework.response import Response
-from rest_framework.views import APIView
 
-
-class LibraryHealthView(APIView):
-    permission_classes = []
-
-    def get(self, request):
-        return Response({"service": "library", "status": "ok"})
-
+from apps.library.api.views.library import (
+    LibraryDownloadAuthorizationView,
+    LibraryHealthView,
+    LibraryListView,
+    LibrarySecureDownloadView,
+)
 
 urlpatterns = [
     path("health/", LibraryHealthView.as_view(), name="library-health"),
+    path("", LibraryListView.as_view(), name="library-list"),
+    path(
+        "downloads/<str:token>/",
+        LibrarySecureDownloadView.as_view(),
+        name="library-secure-download",
+    ),
+    path(
+        "<uuid:product_id>/download/",
+        LibraryDownloadAuthorizationView.as_view(),
+        name="library-download-authorization",
+    ),
 ]
